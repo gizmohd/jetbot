@@ -1,5 +1,5 @@
 import atexit
-from adafruit_motorkit import MotorKit
+from Adafruit_MotorHAT import Adafruit_MotorHAT
 import traitlets
 from traitlets.config.configurable import Configurable
 
@@ -16,33 +16,23 @@ class Motor(Configurable):
         super(Motor, self).__init__(*args, **kwargs)  # initializes traitlets
 
         self._driver = driver
-        if (channel == 1):
-            self._motor = self._driver.motor1
-        else:
-            self._motor = self._driver.motor2
+        self._motor = self._driver.getMotor(channel)
         atexit.register(self._release)
-
-    def set_min_max(self, speed):
-        if (speed == 0):
-           return speed
-        elif (speed > 1):
-           return 1
-        elif (speed < -1):
-           return -1
-        elif (speed > 0):
-           return  0.3 + (speed * .7)
-        else:
-           return  -0.3 - (speed * .7)
-
-
+        
     @traitlets.observe('value')
     def _observe_value(self, change):
         self._write_value(change['new'])
 
     def _write_value(self, value):
         """Sets motor value between [-1, 1]"""
-        self._motor.throttle = self.set_min_max(value)
-#        self._motor.throttle = value
+        mapped_value = int(255.0 * (self.alpha * value + self.beta))
+        speed = min(max(abs(mapped_value), 0), 255)
+        self._motor.setSpeed(speed)
+        if mapped_value < 0:
+            self._motor.run(Adafruit_MotorHAT.FORWARD)
+        else:
+            self._motor.run(Adafruit_MotorHAT.BACKWARD)
 
     def _release(self):
-        self._motor.throttle = 0
+        """Stops motor by releasing control"""
+        self._motor.run(Adafruit_MotorHAT.RELEASE)
