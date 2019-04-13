@@ -23,16 +23,16 @@ class Motor(Configurable):
         atexit.register(self._release)
 
     def set_min_max(self, speed):
-        if (speed == 0):
-           return speed
-        elif (speed > 1):
+        if (speed > 1):
            return 1
         elif (speed < -1):
            return -1
         elif (speed > 0):
            return  0.3 + (speed * .7)
-        else:
+        elif (speed < 0):
            return  -0.3 - (speed * .7)
+	else:
+           return 0
 
 
     @traitlets.observe('value')
@@ -42,7 +42,7 @@ class Motor(Configurable):
     def _write_value(self, value):
         """Sets motor value between [-1, 1]"""
         self._motor.throttle = self.set_min_max(value)
-#        self._motor.throttle = value
+        #self._motor.throttle = value
 
     def _release(self):
         self._motor.throttle = 0
